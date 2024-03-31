@@ -22,4 +22,4 @@ jobs:
       - name: Build and push Docker image
         run: |
           docker build -t harshajk/cicd_assignment:latest .
-          docker push your-docker-registry/cicd_assignment:latest
+          docker push harshajk/cicd_assignment:latest
