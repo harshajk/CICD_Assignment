@@ -1,7 +1,6 @@
 name: Test
 
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: ["Train"]
     types:
