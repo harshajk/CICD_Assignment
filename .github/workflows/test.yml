@@ -21,23 +21,23 @@ jobs:
             const repo = context.repo;
             let workflowSuccess = false;
             
-            // Get all workflow runs for "Train" workflow
-            const runs = await github.actions.listWorkflowRuns({
-              ...repo,
+            // Correctly access the listWorkflowRuns method
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: repo.owner,
+              repo: repo.repo,
               workflow_id: 'train.yml',
               branch: 'main'
             });
             
-            // Find a run associated with the current PR and check its conclusion
+            // Check the status of runs associated with the current PR
             for (const run of runs.data.workflow_runs) {
               if (run.pull_requests.some(pr => pr.number === prNumber) && run.conclusion === 'success') {
                 workflowSuccess = true;
                 break;
               }
             }
-
-            // Publish the result of the Train workflow
             core.setOutput('train_workflow_success', workflowSuccess.toString());
+      
 
   pull-and-run:
     needs: check-train-workflow-status
