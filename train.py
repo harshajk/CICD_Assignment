@@ -10,7 +10,7 @@ y = df['Disease'].to_numpy()
 labels = np.sort(np.unique(y))
 y = np.array([np.where(labels == x) for x in y]).flatten()
 
-# Set to 1 to get accuracy greater than 0.5 
+# Set to 1 to get accuracy greater than 0.5
 get_test_success = 1
 
 if get_test_success == 1:
