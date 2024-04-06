@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check status of Train Workflow
         id: check-train-workflow-success
-        uses: actions/github-script@v5
+        uses: actions/github-script@v7
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -37,7 +37,6 @@ jobs:
               }
             }
             console.log(`Workflow success status: ${workflowSuccess}`);
-            console.log(`Workflow success status as string: ${workflowSuccess.toString()}`);
             core.setOutput('train_workflow_success', workflowSuccess.toString());
       
 
