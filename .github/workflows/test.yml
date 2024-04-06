@@ -36,7 +36,7 @@ jobs:
               }
             }
 
-            // Set output for the next job to use
+            // Publish the result of the Train workflow
             core.setOutput('train_workflow_success', workflowSuccess.toString());
 
   pull-and-run:
