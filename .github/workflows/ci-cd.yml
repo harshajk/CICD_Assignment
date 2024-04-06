@@ -1,0 +1,54 @@
+name: CI-CD
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Train:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t harshajk/cicd_assignment:latest .
+          docker push harshajk/cicd_assignment:latest
+          
+  Test:
+    needs: Train
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull Docker image
+        run: docker pull harshajk/cicd_assignment:latest
+
+      - name: Run Docker image and check score
+        id: run_image
+        run: |
+          SCORE=$(docker run harshajk/cicd_assignment:latest | tail -n 1)
+          echo "Score was $SCORE"
+          if (( $(echo "$SCORE > 0.50" | bc -l) )); then
+            echo "Score is greater than 0.50, success!"
+          else
+            echo "Score is not greater than 0.50, failing the job."
+            exit 1
+          fi
