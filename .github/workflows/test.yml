@@ -31,7 +31,7 @@ jobs:
                 repo: context.repo.repo,
                 workflow_id: 'train.yml', // Ensure this matches your 'Train' workflow file name
                 branch: 'main',
-                status: 'completed',
+                status: 'in_progress',
                 event: 'pull_request'
               });
     
