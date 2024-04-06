@@ -1,14 +1,69 @@
 name: Test
 
 on:
-  workflow_run:
-    workflows: ["Train"]
-    types:
-      - completed
+  pull_request:
+    branches:
+      - main
 
 jobs:
+  check-train-workflow-status:
+    runs-on: ubuntu-latest
+    outputs:
+      train_workflow_success: ${{ steps.check-train-workflow-success.outputs.train_workflow_success }}
+    steps:
+      - name: Wait for Train Workflow to Succeed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const maxAttempts = 30; // Maximum number of polling attempts
+            const sleepDuration = 10000; // 10 seconds in milliseconds
+            let attempt = 0;
+            let success = false;
+            
+            console.log(`Starting to poll for the 'Train' workflow success. Polling up to ${maxAttempts} times every ${sleepDuration / 1000} seconds.`);
+            
+            while(attempt < maxAttempts && !success) {
+              console.log(`Polling attempt ${attempt + 1}/${maxAttempts}...`);
+              
+              const runs = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'train.yml', // Ensure this matches your 'Train' workflow file name
+                branch: 'main',
+                status: 'completed',
+                event: 'pull_request'
+              });
+    
+              // Looking for a run that started after the current PR and succeeded
+              const recentSuccessRun = runs.data.workflow_runs.find(run => 
+                new Date(run.created_at) > new Date(context.payload.pull_request.created_at) &&
+                run.conclusion === 'success'
+              );
+    
+              if (recentSuccessRun) {
+                console.log(`Found a successful 'Train' workflow run: ${recentSuccessRun.html_url}`);
+                success = true;
+                break;
+              } else {
+                console.log(`No successful 'Train' workflow run found on attempt ${attempt + 1}.`);
+              }
+    
+              await new Promise(r => setTimeout(r, sleepDuration));
+              attempt++;
+            }
+    
+            if (!success) {
+              console.log(`'Train' workflow did not succeed within ${maxAttempts * sleepDuration / 1000} seconds.`);
+              core.setFailed("Train workflow did not succeed within the expected time.");
+            } else {
+              console.log("'Train' workflow succeeded within the polling period.");
+            }
+
+
   pull-and-run:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: check-train-workflow-status
+    if: ${{ needs.check-train-workflow-status.outputs.train_workflow_success == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,4 +88,3 @@ jobs:
           else
             echo "Score is not greater than 0.50, failing the job."
             exit 1
-          fi
