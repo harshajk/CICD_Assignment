@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check status of Train Workflow
         id: check-train-workflow-success
-        uses: actions/github-script@v5
+        uses: actions/github-script@v7
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -22,12 +22,15 @@ jobs:
             let workflowSuccess = false;
             
             // Get all workflow runs for "Train" workflow
-            const runs = await github.actions.listWorkflowRuns({
+            const runs = await github.rest.actions.listWorkflowRuns({
               ...repo,
               workflow_id: 'train.yml',
               branch: 'main'
             });
-            
+            console.log(`Checking workflow runs for PR #${prNumber}`);
+            for (const run of runs.data.workflow_runs) {
+              console.log(`Run ${run.id}: Conclusion=${run.conclusion}, Associated PRs=${run.pull_requests.map(pr => pr.number).join(', ')}`);
+            }
             // Find a run associated with the current PR and check its conclusion
             for (const run of runs.data.workflow_runs) {
               if (run.pull_requests.some(pr => pr.number === prNumber) && run.conclusion === 'success') {
