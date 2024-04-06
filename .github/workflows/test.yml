@@ -36,6 +36,8 @@ jobs:
                 break;
               }
             }
+            console.log(`Workflow success status: ${workflowSuccess}`);
+            console.log(`Workflow success status as string: ${workflowSuccess.toString()}`);
             core.setOutput('train_workflow_success', workflowSuccess.toString());
       
 
