@@ -4,14 +4,44 @@ on:
   pull_request:
     branches:
       - main
-  workflow_run:
-    workflows: ["Train"]
-    types:
-      - completed
 
 jobs:
+  check-train-workflow-status:
+    runs-on: ubuntu-latest
+    outputs:
+      train_workflow_success: ${{ steps.check-train-workflow-success.outputs.train_workflow_success }}
+    steps:
+      - name: Check status of Train Workflow
+        id: check-train-workflow-success
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const repo = context.repo;
+            let workflowSuccess = false;
+            
+            // Get all workflow runs for "Train" workflow
+            const runs = await github.actions.listWorkflowRuns({
+              ...repo,
+              workflow_id: 'train.yml',
+              branch: 'main'
+            });
+            
+            // Find a run associated with the current PR and check its conclusion
+            for (const run of runs.data.workflow_runs) {
+              if (run.pull_requests.some(pr => pr.number === prNumber) && run.conclusion === 'success') {
+                workflowSuccess = true;
+                break;
+              }
+            }
+
+            // Set output for the next job to use
+            core.setOutput('train_workflow_success', workflowSuccess.toString());
+
   pull-and-run:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: check-train-workflow-status
+    if: ${{ needs.check-train-workflow-status.outputs.train_workflow_success == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -36,4 +66,3 @@ jobs:
           else
             echo "Score is not greater than 0.50, failing the job."
             exit 1
-          fi
